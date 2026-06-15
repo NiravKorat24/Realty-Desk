@@ -221,9 +221,58 @@ export default function App() {
   const [searchBuilding, setSearchBuilding] = useState("");
   const [searchUnit, setSearchUnit] = useState("");
 
+  const [inventoryLoaded, setInventoryLoaded] = useState(false);
+
+  const saveInventoryToDb = async (newInventory) => {
+    try {
+      await fetch(`${API_BASE_URL}/inventory`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projects: newInventory })
+      });
+    } catch (error) {
+      console.error("Could not save inventory to database", error);
+    }
+  };
+
+  // Fetch inventory from MongoDB on mount
+  useEffect(() => {
+    const fetchInventory = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/inventory`);
+        if (!response.ok) {
+          throw new Error();
+        }
+        const data = await response.json();
+        if (data && data.length > 0) {
+          setInventory(data);
+        } else {
+          // If empty in DB, initialize with local storage or defaults
+          const localInv = window.localStorage.getItem("enventory-inventory");
+          const initialData = localInv ? JSON.parse(localInv) : cloneProjects();
+          setInventory(initialData);
+          await saveInventoryToDb(initialData);
+        }
+      } catch {
+        const localInv = window.localStorage.getItem("enventory-inventory");
+        if (localInv) {
+          setInventory(JSON.parse(localInv));
+        }
+      } finally {
+        setInventoryLoaded(true);
+      }
+    };
+
+    fetchInventory();
+  }, []);
+
+  // Save changes to localStorage and MongoDB
   useEffect(() => {
     window.localStorage.setItem("enventory-inventory", JSON.stringify(inventory));
-  }, [inventory]);
+    if (inventoryLoaded) {
+      saveInventoryToDb(inventory);
+    }
+  }, [inventory, inventoryLoaded]);
 
   const filteredProfiles = useMemo(() => {
     return profiles.filter((p) => {

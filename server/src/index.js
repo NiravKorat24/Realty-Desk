@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 const path = require("path");
 
 const profileRoutes = require("./routes/profiles");
+const inventoryRoutes = require("./routes/inventory");
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -26,6 +27,7 @@ app.get("/api/health", (_request, response) => {
 });
 
 app.use("/api/profiles", profileRoutes);
+app.use("/api/inventory", inventoryRoutes);
 
 app.use((error, _request, response, _next) => {
   if (error.name === "ValidationError") {
@@ -39,18 +41,38 @@ app.use((error, _request, response, _next) => {
   response.status(500).json({ message: "Server error" });
 });
 
-async function start() {
+const startDb = async () => {
+  if (mongoose.connection.readyState >= 1) {
+    return;
+  }
   if (!mongoUri) {
     throw new Error("MONGODB_URI is missing in environment variables.");
   }
-
   await mongoose.connect(mongoUri);
-  app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-  });
+};
+
+// Connect to database on every request to support serverless environment
+app.use(async (_req, _res, next) => {
+  try {
+    await startDb();
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Run local server if not deployed as a Vercel serverless function
+if (!process.env.VERCEL) {
+  startDb()
+    .then(() => {
+      app.listen(port, () => {
+        console.log(`Server running on port ${port}`);
+      });
+    })
+    .catch((error) => {
+      console.error("Startup failed", error);
+      process.exit(1);
+    });
 }
 
-start().catch((error) => {
-  console.error("Startup failed", error);
-  process.exit(1);
-});
+module.exports = app;

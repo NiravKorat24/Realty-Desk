@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "Enventory",
+    "slug": "enventory",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#F6F2EA"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.enventory.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F6F2EA"
+      }
+    }
+  }
+}
